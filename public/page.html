@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+    <head>
+        <title>Client websocket test</title>
+    </head>
+    <body >
+        <h1>Client ID: <span id="client-id"></span></h1>
+        <div id="play-area" style="width: 200px; height: 200px; border: 1px solid black; position: relative;">
+            <div id="mouse-1" style="position: absolute; pointer-events: none;">🌽</div>
+            <div id="mouse-2" style="position: absolute">🍕</div>
+            <div id="mouse-3" style="position: absolute">🥗</div>
+            <div id="mouse-4" style="position: absolute">🧂</div>
+        </div>
+
+        <script>
+            const socket = new WebSocket('ws://localhost:3000');
+            let clientId = -1;
+
+            socket.addEventListener('open', (event) => {
+                socket.send('register');
+            });
+
+            function sendMessage(message) {
+                socket.send(JSON.stringify(message))
+            }
+
+            socket.addEventListener('message', (event) => {
+                if (clientId === -1) {
+                    clientId = parseInt(event.data);
+                    document.getElementById('client-id').innerText = clientId;
+                }
+                const mice = JSON.parse(event.data);
+
+                document.getElementById("mouse-1").style.visibility = "hidden";
+                document.getElementById("mouse-2").style.visibility = "hidden";
+                document.getElementById("mouse-3").style.visibility = "hidden";
+                document.getElementById("mouse-4").style.visibility = "hidden";
+
+                mice.forEach(mouse => {
+                    const mouseElement = document.getElementById(`mouse-${mouse.clientId}`);
+                    mouseElement.style.visibility = "visible"
+
+                    mouseElement.style.left = `${mouse.x}px`;
+                    mouseElement.style.top = `${mouse.y}px`;
+                })
+            })
+            
+            const playArea = document.getElementById("play-area");
+            playArea.addEventListener('mousemove', (e) => {
+                if (e.target.id === "play-area") {
+
+                    const bounds = e.currentTarget.getBoundingClientRect();
+                    const posX = event.clientX - bounds.left;
+                    const posY = event.clientY - bounds.top;
+
+                    sendMessage({ clientId, x: posX, y: posY})
+                }
+            })
+        </script>
+    </body>
+</html>
